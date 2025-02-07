@@ -8,12 +8,14 @@ interface TimerProps {
   hours?: number;
   minutes?: number;
   seconds?: number;
+  autoStartTime?: string;
 }
 
 const CountdownTimer = ({
   hours = 8,
   minutes = 0,
   seconds = 0,
+  autoStartTime = "09:00", // 8:02 PM in 24-hour format
 }: TimerProps) => {
   const [timeLeft, setTimeLeft] = useState({
     hours,
@@ -21,6 +23,22 @@ const CountdownTimer = ({
     seconds,
   });
   const [isRunning, setIsRunning] = useState(false);
+
+  // Check current time and auto-start
+  useEffect(() => {
+    const checkTimeAndStart = () => {
+      const now = new Date();
+      const currentTime = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
+      
+      if (currentTime === autoStartTime && !isRunning) {
+        setIsRunning(true);
+        setTimeLeft({ hours, minutes, seconds });
+      }
+    };
+
+    const timeCheckInterval = setInterval(checkTimeAndStart, 1000);
+    return () => clearInterval(timeCheckInterval);
+  }, [autoStartTime, hours, minutes, seconds, isRunning]);
 
   const getTotalSeconds = (h: number, m: number, s: number) =>
     h * 3600 + m * 60 + s;
@@ -107,7 +125,7 @@ const CountdownTimer = ({
           <span className="text-4xl font-bold text-white">:</span>
           <TimeUnit value={timeLeft.seconds} label="SECONDS" />
         </div>
-        <div className="flex justify-center gap-4">
+        {/* <div className="flex justify-center gap-4">
           <Button
             variant="secondary"
             size="lg"
@@ -124,11 +142,7 @@ const CountdownTimer = ({
             <RefreshCwIcon className="mr-2" />
             Reset
           </Button>
-          <Button variant="destructive" size="lg" onClick={handleTest}>
-            <Laptop2Icon className="mr-2" />
-            Test (-1h)
-          </Button>
-        </div>
+        </div> */}
       </Card>
 
       <Card className="max-w-3xl w-full mx-auto p-4">
