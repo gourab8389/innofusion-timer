@@ -15,7 +15,10 @@ const geistMono = localFont({
 
 export const metadata: Metadata = {
   title: "HackSnippet",
-  description: "",
+  description: "Inter College Hackathon",
+  icons: {
+    icon: "/logo.png",
+  }
 };
 
 export default function RootLayout({
@@ -26,7 +29,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={`${geistSans.variable} ${geistMono.variable} antialiased overflow-x-hidden w-screen`}
       >
         {children}
       </body>
