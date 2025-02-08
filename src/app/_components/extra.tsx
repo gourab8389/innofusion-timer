@@ -108,7 +108,7 @@ const CountdownTimer = ({ hours = 8, minutes = 0, seconds = 0 }: TimerProps) => 
 
 
             <Card className="p-4 mx-auto w-full max-w-3xl">
-                <h3 className="text-lg font-semibold mb-4">Current Progress: {getCheckpoint()}</h3>
+{/*                 <h3 className="text-lg font-semibold mb-4">Current Progress: {getCheckpoint()}</h3> */}
                 <div className="w-full bg-gray-200 rounded-full h-4">
                     <div
                         className="bg-blue-600 h-4 rounded-full transition-all duration-500"
