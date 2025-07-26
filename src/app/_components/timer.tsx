@@ -1,50 +1,55 @@
 "use client";
 import React, { useState, useEffect } from "react";
-import { useSearchParams } from "next/navigation";
 
 interface TimerProps {
+  // Props are now optional since we'll calculate from IST
   initialHours?: number;
   initialMinutes?: number;
   initialSeconds?: number;
 }
 
 const CountdownTimer = ({
-  initialHours = 30,
-  initialMinutes = 0,
-  initialSeconds = 0,
 }: TimerProps) => {
   
-  const searchParams = useSearchParams();
-
-  // Initialize time from URL params or use default values
-  const getInitialTime = () => {
-    const urlHours = searchParams.get("h");
-    const urlMinutes = searchParams.get("m");
-    const urlSeconds = searchParams.get("s");
-
-    return {
-      hours: urlHours ? parseInt(urlHours) : initialHours,
-      minutes: urlMinutes ? parseInt(urlMinutes) : initialMinutes,
-      seconds: urlSeconds ? parseInt(urlSeconds) : initialSeconds,
-    };
+  // Function to get current IST time - FIXED
+  const getISTTime = () => {
+    const now = new Date();
+    // Use toLocaleString to get proper IST time
+    const istString = now.toLocaleString('en-US', {
+      timeZone: 'Asia/Kolkata'
+    });
+    return new Date(istString);
   };
 
-  const [timeLeft, setTimeLeft] = useState(getInitialTime);
-  const [isRunning, setIsRunning] = useState(false);
+  // Function to get target time: July 27, 2025, 4:00 PM IST - FIXED
+  const getTargetTime = () => {
+    
+    // Alternative method: create the exact target time
+    const targetIST = new Date(2025, 6, 27, 16, 0, 0); // Month is 0-indexed, so 6 = July
+    return targetIST;
+  };
+
+  // Calculate initial time remaining - FIXED
+  const calculateTimeRemaining = () => {
+    const istNow = getISTTime();
+    const target = getTargetTime();
+    const timeDiff = target.getTime() - istNow.getTime();
+    
+    if (timeDiff <= 0) {
+      return { hours: 0, minutes: 0, seconds: 0 };
+    }
+
+    const hours = Math.floor(timeDiff / (1000 * 60 * 60));
+    const minutes = Math.floor((timeDiff % (1000 * 60 * 60)) / (1000 * 60));
+    const seconds = Math.floor((timeDiff % (1000 * 60)) / 1000);
+
+    return { hours, minutes, seconds };
+  };
+
+  const [timeLeft, setTimeLeft] = useState(calculateTimeRemaining);
+  const [isRunning, setIsRunning] = useState(true); // Auto-start
   const [isHovered, setIsHovered] = useState(false);
-
-  // Update URL params when time changes
-  const updateUrlParams = (hours: number, minutes: number, seconds: number) => {
-    const params = new URLSearchParams(window.location.search);
-    params.set("h", hours.toString());
-    params.set("m", minutes.toString());
-    params.set("s", seconds.toString());
-    const newUrl = `${window.location.pathname}?${params.toString()}`;
-    window.history.replaceState({}, "", newUrl);
-  };
-
-
-
+  const [currentISTTime, setCurrentISTTime] = useState(getISTTime());
 
   const getCheckpoint = () => {
     const hoursLeft =
@@ -102,52 +107,22 @@ const CountdownTimer = ({
     return Math.max(0, Math.min(100, progressWithinCheckpoint));
   };
 
-  // Timer countdown effect
+  // Timer countdown effect - updates every second based on real IST time
   useEffect(() => {
     let interval: NodeJS.Timeout;
 
     if (isRunning) {
       interval = setInterval(() => {
-        setTimeLeft((prev) => {
-          // Check if timer has reached zero
-          if (prev.hours === 0 && prev.minutes === 0 && prev.seconds === 0) {
-            setIsRunning(false);
-            return prev;
-          }
+        const newTimeRemaining = calculateTimeRemaining();
+        const newISTTime = getISTTime();
+        
+        setTimeLeft(newTimeRemaining);
+        setCurrentISTTime(newISTTime);
 
-          let newSeconds = prev.seconds - 1;
-          let newMinutes = prev.minutes;
-          let newHours = prev.hours;
-
-          if (newSeconds < 0) {
-            newSeconds = 59;
-            newMinutes -= 1;
-          }
-
-          if (newMinutes < 0 && newHours > 0) {
-            newMinutes = 59;
-            newHours -= 1;
-          }
-
-          // Ensure we don't go below zero
-          if (newHours < 0) {
-            newHours = 0;
-            newMinutes = 0;
-            newSeconds = 0;
-            setIsRunning(false);
-          }
-
-          const newTime = {
-            hours: Math.max(0, newHours),
-            minutes: Math.max(0, newMinutes),
-            seconds: Math.max(0, newSeconds),
-          };
-
-          // Update URL params with new time
-          updateUrlParams(newTime.hours, newTime.minutes, newTime.seconds);
-
-          return newTime;
-        });
+        // Check if timer has reached zero
+        if (newTimeRemaining.hours === 0 && newTimeRemaining.minutes === 0 && newTimeRemaining.seconds === 0) {
+          setIsRunning(false);
+        }
       }, 1000);
     }
 
@@ -161,20 +136,52 @@ const CountdownTimer = ({
   };
 
   const handleReset = () => {
-    setIsRunning(false);
-    const resetTime = {
-      hours: initialHours,
-      minutes: initialMinutes,
-      seconds: initialSeconds,
-    };
+    setIsRunning(true); // Auto-restart
+    const resetTime = calculateTimeRemaining();
     setTimeLeft(resetTime);
-    updateUrlParams(resetTime.hours, resetTime.minutes, resetTime.seconds);
+    setCurrentISTTime(getISTTime());
   };
 
   const currentCheckpoint = getCheckpoint();
 
+  // Format IST time for display - FIXED
+  const formatISTTime = (date: Date) => {
+    return date.toLocaleString('en-IN', {
+      timeZone: 'Asia/Kolkata',
+      weekday: 'short',
+      year: 'numeric',
+      month: 'short', 
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: true
+    });
+  };
+
+
   return (
-    <div className="w-full max-w-4xl mx-auto flex flex-col items-center">
+    <div className="w-full bg-hero max-w-4xl mx-auto flex flex-col items-center bg-hero min-h-screen py-8">
+      {/* Title */}
+      <div className="text-center my-8 ml-8">
+        <h1 className="text-6xl font-bold text-white mb-4">
+          INNOFUSION <span className="text-red-500">2.0</span>
+        </h1>
+      </div>
+
+      {/* IST Time Display */}
+      <div className="mb-6 text-center">
+        <div className="bg-red-900/80 text-white px-6 py-3 rounded-full border-2 border-red-500/30">
+          <div className="text-red-200 text-sm mb-1">Current IST Time</div>
+          <div className="text-white font-mono text-lg">
+            {formatISTTime(currentISTTime)}
+          </div>
+        </div>
+        <div className="text-red-400 text-sm mt-3">
+          Target: Sun, 27 Jul, 2025, 04:00:00 pm
+        </div>
+      </div>
+
       {/* Main Timer Display */}
       <div
         className="w-full mt-10 relative"
@@ -183,18 +190,18 @@ const CountdownTimer = ({
       >
         <div className="flex justify-center items-center gap-4 mb-4">
           <TimeUnit value={timeLeft.hours} label="HOURS" />
-          <span className="text-3xl md:text-4xl font-bold text-white opacity-70">
+          <span className="text-3xl md:text-4xl font-bold text-red-400 opacity-70">
             :
           </span>
           <TimeUnit value={timeLeft.minutes} label="MINUTES" />
-          <span className="text-3xl md:text-4xl font-bold text-white opacity-70">
+          <span className="text-3xl md:text-4xl font-bold text-red-400 opacity-70">
             :
           </span>
           <TimeUnit value={timeLeft.seconds} label="SECONDS" />
         </div>
         {/* Control Buttons */}
         <div className="flex justify-center gap-3">
-          {/* Start button - always visible when timer is not running */}
+          {/* Start button - visible when timer is not running */}
           {!isRunning && (
             <button
               onClick={handleToggle}
@@ -227,7 +234,7 @@ const CountdownTimer = ({
                 : "opacity-0 translate-y-2 pointer-events-none"
             }`}
           >
-            🔄 Reset
+            🔄 Refresh
           </button>
         </div>
       </div>
@@ -238,14 +245,14 @@ const CountdownTimer = ({
           {currentCheckpoint.name}
         </h3>
 
-        {/* Checkpoint Progress Bar - Fixed with white color */}
-        <div className="w-full bg-gray-800/60 rounded-full h-3 overflow-hidden border border-gray-600/50">
+        {/* Checkpoint Progress Bar */}
+        <div className="w-full bg-gray-800/60 rounded-full h-4 overflow-hidden border border-red-500/30">
           <div
-            className="bg-white h-full rounded-full transition-all duration-500 ease-out relative shadow-lg"
+            className="bg-gradient-to-r from-red-600 to-red-400 h-full rounded-full transition-all duration-500 ease-out relative shadow-lg"
             style={{ width: `${getProgress()}%` }}
           >
             {/* Animated glow effect */}
-            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-red to-transparent animate-pulse"></div>
+            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent animate-pulse"></div>
           </div>
         </div>
 
@@ -269,12 +276,12 @@ const CountdownTimer = ({
 
 const TimeUnit = ({ value, label }: { value: number; label: string }) => (
   <div className="text-center">
-    <div className="bg-white/10 backdrop-blur-sm rounded-xl p-3 md:p-4 border border-white/20 shadow-lg">
-      <span className="text-3xl md:text-5xl lg:text-7xl font-bold text-white font-mono">
+    <div className="bg-gray-800/90 backdrop-blur-sm rounded-xl p-3 md:p-4 border-2 border-red-500/30 shadow-lg">
+      <span className="text-3xl md:text-5xl lg:text-6xl font-bold text-white font-mono">
         {value.toString().padStart(2, "0")}
       </span>
     </div>
-    <span className="text-xs md:text-sm font-medium text-white/80 mt-2 block tracking-wider">
+    <span className="text-xs md:text-sm font-medium text-gray-300 mt-2 block tracking-wider">
       {label}
     </span>
   </div>

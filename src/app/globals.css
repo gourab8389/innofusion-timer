@@ -75,11 +75,12 @@ body {
   body {
     @apply bg-background text-foreground;
   }
-   .hero {
+
+  .hero {
     position: relative;
     top: 0;
     background: url("/hero/hero1.png");
-    background-size: 43%;
+    background-size: 75%;
     background-position: center;
     justify-self: center;
     background-repeat: no-repeat;
