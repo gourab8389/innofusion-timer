@@ -12,10 +12,10 @@ interface TimerProps {
 }
 
 const CountdownTimer = ({
-  hours = 8,
+  hours = 30,
   minutes = 0,
   seconds = 0,
-  autoStartTime = "09:00", // 8:02 PM in 24-hour format
+  autoStartTime = "10:00", // 8:02 PM in 24-hour format
 }: TimerProps) => {
   const [timeLeft, setTimeLeft] = useState({
     hours,
@@ -52,9 +52,12 @@ const CountdownTimer = ({
   const getCheckpoint = () => {
     const hoursLeft =
       timeLeft.hours + timeLeft.minutes / 60 + timeLeft.seconds / 3600;
-    if (hoursLeft > 5) return "Checkpoint 1 : Ends at 12:00 PM";
-    if (hoursLeft > 2) return "Checkpoint 2 : Ends at 3:00 PM";
-    if (hoursLeft > 0) return "Checkpoint 3 : Ends at 5:00 PM";
+    if (hoursLeft > 25) return "Checkpoint 1 : Ends at 03:00 PM";
+    if (hoursLeft > 20) return "Checkpoint 2 : Ends at 08:00 PM";
+    if (hoursLeft > 15) return "Checkpoint 3 : Ends at 01:00 AM";
+    if (hoursLeft > 10) return "Checkpoint 4 : Ends at 6:00 AM";
+    if (hoursLeft > 5) return "Checkpoint 5 : Ends at 11:00 AM";
+    if (hoursLeft > 0) return "Final Checkpoint : Ends at 04:00 PM";
     return "Completed";
   };
 
@@ -157,19 +160,34 @@ const CountdownTimer = ({
         </div>
         <div className="mt-4 grid grid-cols-3 gap-4">
           <TimelineItem
-            time="First 3 hours (9-12 PM)"
+            time="Ends at 03:00 PM"
             label="Checkpoint 1"
-            active={getCheckpoint() === "Checkpoint 1 : Ends at 12:00 PM"}
+            active={getCheckpoint() === "Checkpoint 1 : Ends at 03:00 PM"}
           />
           <TimelineItem
-            time="Next 3 hours (12-3 PM)"
+            time="Ends at 08:00 PM"
             label="Checkpoint 2"
-            active={getCheckpoint() === "Checkpoint 2 : Ends at 3:00 PM"}
+            active={getCheckpoint() === "Checkpoint 2 : Ends at 08:00 PM"}
           />
           <TimelineItem
-            time="Last 2 hours(3-5 PM)"
+            time="Ends at 01:00 AM"
             label="Checkpoint 3"
-            active={getCheckpoint() === "Checkpoint 3 : Ends at 5:00 PM"}
+            active={getCheckpoint() === "Checkpoint 3 : Ends at 01:00 AM"}
+          />
+          <TimelineItem
+            time="Ends at 6:00 AM"
+            label="Checkpoint 4"
+            active={getCheckpoint() === "Checkpoint 4 : Ends at 6:00 AM"}
+          />
+          <TimelineItem
+            time="Ends at 11:00 AM"
+            label="Checkpoint 5"
+            active={getCheckpoint() === "Checkpoint 5 : Ends at 11:00 AM"}
+          />
+          <TimelineItem
+            time="Ends at 04:00 PM"
+            label="Checkpoint 6"
+            active={getCheckpoint() === "Final Checkpoint : Ends at 04:00 PM"}
           />
         </div>
       </Card>
