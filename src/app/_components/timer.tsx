@@ -1,6 +1,6 @@
 "use client";
 import React, { useState, useEffect } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 
 interface TimerProps {
   initialHours?: number;
@@ -43,8 +43,6 @@ const CountdownTimer = ({
     window.history.replaceState({}, "", newUrl);
   };
 
-  const getTotalSeconds = (h: number, m: number, s: number) =>
-    h * 3600 + m * 60 + s;
 
 
 
