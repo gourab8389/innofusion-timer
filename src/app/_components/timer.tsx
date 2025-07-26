@@ -192,7 +192,6 @@ const CountdownTimer = ({
           </span>
           <TimeUnit value={timeLeft.seconds} label="SECONDS" />
         </div>
-
         {/* Control Buttons */}
         <div className="flex justify-center gap-3">
           {/* Start button - always visible when timer is not running */}
