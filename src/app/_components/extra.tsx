@@ -125,7 +125,7 @@ const CountdownTimer = ({ hours = 8, minutes = 0, seconds = 0 }: TimerProps) => 
 
 const CurrentTimelineItem = ({ checkpoint }: { checkpoint: string }) => {
     let time = "";
-    let label = checkpoint;
+    const label = checkpoint;
 
     switch (checkpoint) {
         case "Checkpoint 1":

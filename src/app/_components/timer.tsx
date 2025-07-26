@@ -1,8 +1,8 @@
 "use client";
 import React, { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { PlayIcon, PauseIcon, RefreshCwIcon, Laptop2Icon } from "lucide-react";
+// import { Button } from "@/components/ui/button";
+// import { PlayIcon, PauseIcon, RefreshCwIcon, Laptop2Icon } from "lucide-react";
 
 interface TimerProps {
   hours?: number;
@@ -102,21 +102,21 @@ const CountdownTimer = ({
     return () => clearInterval(interval);
   }, [isRunning]);
 
-  const handleReset = () => {
-    setIsRunning(false);
-    setTimeLeft({ hours, minutes, seconds });
-  };
+  // const handleReset = () => {
+  //   setIsRunning(false);
+  //   setTimeLeft({ hours, minutes, seconds });
+  // };
 
-  const handleTest = () => {
-    setTimeLeft((prev) => {
-      const newHours = Math.max(0, prev.hours - 1);
-      return {
-        hours: newHours,
-        minutes: prev.minutes,
-        seconds: prev.seconds,
-      };
-    });
-  };
+  // const handleTest = () => {
+  //   setTimeLeft((prev) => {
+  //     const newHours = Math.max(0, prev.hours - 1);
+  //     return {
+  //       hours: newHours,
+  //       minutes: prev.minutes,
+  //       seconds: prev.seconds,
+  //     };
+  //   });
+  // };
 
   return (
     <div className="w-full flex items-center justify-center flex-col gap-6">
