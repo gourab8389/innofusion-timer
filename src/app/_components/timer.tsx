@@ -13,7 +13,7 @@ const CountdownTimer = ({
   initialMinutes = 0,
   initialSeconds = 0,
 }: TimerProps) => {
-  const router = useRouter();
+  
   const searchParams = useSearchParams();
 
   // Initialize time from URL params or use default values
@@ -46,16 +46,7 @@ const CountdownTimer = ({
   const getTotalSeconds = (h: number, m: number, s: number) =>
     h * 3600 + m * 60 + s;
 
-  const totalSeconds = getTotalSeconds(
-    initialHours,
-    initialMinutes,
-    initialSeconds
-  );
-  const currentSeconds = getTotalSeconds(
-    timeLeft.hours,
-    timeLeft.minutes,
-    timeLeft.seconds
-  );
+
 
   const getCheckpoint = () => {
     const hoursLeft =
