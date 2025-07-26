@@ -1,48 +1,56 @@
 "use client";
 import React, { useState, useEffect } from "react";
-import { Card } from "@/components/ui/card";
-// import { Button } from "@/components/ui/button";
-// import { PlayIcon, PauseIcon, RefreshCwIcon, Laptop2Icon } from "lucide-react";
+import { useRouter, useSearchParams } from "next/navigation";
 
 interface TimerProps {
-  hours?: number;
-  minutes?: number;
-  seconds?: number;
-  autoStartTime?: string;
+  initialHours?: number;
+  initialMinutes?: number;
+  initialSeconds?: number;
 }
 
 const CountdownTimer = ({
-  hours = 30,
-  minutes = 0,
-  seconds = 0,
-  autoStartTime = "10:00", // 8:02 PM in 24-hour format
+  initialHours = 30,
+  initialMinutes = 0,
+  initialSeconds = 0,
 }: TimerProps) => {
-  const [timeLeft, setTimeLeft] = useState({
-    hours,
-    minutes,
-    seconds,
-  });
-  const [isRunning, setIsRunning] = useState(false);
+  const router = useRouter();
+  const searchParams = useSearchParams();
 
-  // Check current time and auto-start
-  useEffect(() => {
-    const checkTimeAndStart = () => {
-      const now = new Date();
-      const currentTime = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
-      
-      if (currentTime === autoStartTime && !isRunning) {
-        setIsRunning(true);
-        setTimeLeft({ hours, minutes, seconds });
-      }
+  // Initialize time from URL params or use default values
+  const getInitialTime = () => {
+    const urlHours = searchParams.get("h");
+    const urlMinutes = searchParams.get("m");
+    const urlSeconds = searchParams.get("s");
+
+    return {
+      hours: urlHours ? parseInt(urlHours) : initialHours,
+      minutes: urlMinutes ? parseInt(urlMinutes) : initialMinutes,
+      seconds: urlSeconds ? parseInt(urlSeconds) : initialSeconds,
     };
+  };
 
-    const timeCheckInterval = setInterval(checkTimeAndStart, 1000);
-    return () => clearInterval(timeCheckInterval);
-  }, [autoStartTime, hours, minutes, seconds, isRunning]);
+  const [timeLeft, setTimeLeft] = useState(getInitialTime);
+  const [isRunning, setIsRunning] = useState(false);
+  const [isHovered, setIsHovered] = useState(false);
+
+  // Update URL params when time changes
+  const updateUrlParams = (hours: number, minutes: number, seconds: number) => {
+    const params = new URLSearchParams(window.location.search);
+    params.set("h", hours.toString());
+    params.set("m", minutes.toString());
+    params.set("s", seconds.toString());
+    const newUrl = `${window.location.pathname}?${params.toString()}`;
+    window.history.replaceState({}, "", newUrl);
+  };
 
   const getTotalSeconds = (h: number, m: number, s: number) =>
     h * 3600 + m * 60 + s;
-  const totalSeconds = getTotalSeconds(hours, minutes, seconds);
+
+  const totalSeconds = getTotalSeconds(
+    initialHours,
+    initialMinutes,
+    initialSeconds
+  );
   const currentSeconds = getTotalSeconds(
     timeLeft.hours,
     timeLeft.minutes,
@@ -52,25 +60,67 @@ const CountdownTimer = ({
   const getCheckpoint = () => {
     const hoursLeft =
       timeLeft.hours + timeLeft.minutes / 60 + timeLeft.seconds / 3600;
-    if (hoursLeft > 25) return "Checkpoint 1 : Ends at 03:00 PM";
-    if (hoursLeft > 20) return "Checkpoint 2 : Ends at 08:00 PM";
-    if (hoursLeft > 15) return "Checkpoint 3 : Ends at 01:00 AM";
-    if (hoursLeft > 10) return "Checkpoint 4 : Ends at 6:00 AM";
-    if (hoursLeft > 5) return "Checkpoint 5 : Ends at 11:00 AM";
-    if (hoursLeft > 0) return "Final Checkpoint : Ends at 04:00 PM";
-    return "Completed";
+
+    if (hoursLeft > 25)
+      return { name: "Checkpoint 1: Ends at 03:00 PM", stage: 1 };
+    if (hoursLeft > 20)
+      return { name: "Checkpoint 2: Ends at 08:00 PM", stage: 2 };
+    if (hoursLeft > 15)
+      return { name: "Checkpoint 3: Ends at 01:00 AM", stage: 3 };
+    if (hoursLeft > 10)
+      return { name: "Checkpoint 4: Ends at 6:00 AM", stage: 4 };
+    if (hoursLeft > 5)
+      return { name: "Checkpoint 5: Ends at 11:00 AM", stage: 5 };
+    if (hoursLeft > 0)
+      return { name: "Final Checkpoint: Ends at 04:00 PM", stage: 6 };
+    return { name: "Hackathon Completed!", stage: 7 };
   };
 
   const getProgress = () => {
-    return ((totalSeconds - currentSeconds) / totalSeconds) * 100;
+    const currentCheckpoint = getCheckpoint();
+    const hoursLeft =
+      timeLeft.hours + timeLeft.minutes / 60 + timeLeft.seconds / 3600;
+
+    // Calculate progress within current checkpoint
+    let progressWithinCheckpoint = 0;
+
+    switch (currentCheckpoint.stage) {
+      case 1: // 30-25 hours (5-hour window)
+        progressWithinCheckpoint = ((30 - hoursLeft) / 5) * 100;
+        break;
+      case 2: // 25-20 hours (5-hour window)
+        progressWithinCheckpoint = ((25 - hoursLeft) / 5) * 100;
+        break;
+      case 3: // 20-15 hours (5-hour window)
+        progressWithinCheckpoint = ((20 - hoursLeft) / 5) * 100;
+        break;
+      case 4: // 15-10 hours (5-hour window)
+        progressWithinCheckpoint = ((15 - hoursLeft) / 5) * 100;
+        break;
+      case 5: // 10-5 hours (5-hour window)
+        progressWithinCheckpoint = ((10 - hoursLeft) / 5) * 100;
+        break;
+      case 6: // 5-0 hours (5-hour window)
+        progressWithinCheckpoint = ((5 - hoursLeft) / 5) * 100;
+        break;
+      case 7: // Completed
+        progressWithinCheckpoint = 100;
+        break;
+      default:
+        progressWithinCheckpoint = 0;
+    }
+
+    return Math.max(0, Math.min(100, progressWithinCheckpoint));
   };
 
+  // Timer countdown effect
   useEffect(() => {
     let interval: NodeJS.Timeout;
 
     if (isRunning) {
       interval = setInterval(() => {
         setTimeLeft((prev) => {
+          // Check if timer has reached zero
           if (prev.hours === 0 && prev.minutes === 0 && prev.seconds === 0) {
             setIsRunning(false);
             return prev;
@@ -85,150 +135,160 @@ const CountdownTimer = ({
             newMinutes -= 1;
           }
 
-          if (newMinutes < 0) {
+          if (newMinutes < 0 && newHours > 0) {
             newMinutes = 59;
             newHours -= 1;
           }
 
-          return {
-            hours: newHours,
-            minutes: newMinutes,
-            seconds: newSeconds,
+          // Ensure we don't go below zero
+          if (newHours < 0) {
+            newHours = 0;
+            newMinutes = 0;
+            newSeconds = 0;
+            setIsRunning(false);
+          }
+
+          const newTime = {
+            hours: Math.max(0, newHours),
+            minutes: Math.max(0, newMinutes),
+            seconds: Math.max(0, newSeconds),
           };
+
+          // Update URL params with new time
+          updateUrlParams(newTime.hours, newTime.minutes, newTime.seconds);
+
+          return newTime;
         });
       }, 1000);
     }
 
-    return () => clearInterval(interval);
+    return () => {
+      if (interval) clearInterval(interval);
+    };
   }, [isRunning]);
 
-  // const handleReset = () => {
-  //   setIsRunning(false);
-  //   setTimeLeft({ hours, minutes, seconds });
-  // };
+  const handleToggle = () => {
+    setIsRunning(!isRunning);
+  };
 
-  // const handleTest = () => {
-  //   setTimeLeft((prev) => {
-  //     const newHours = Math.max(0, prev.hours - 1);
-  //     return {
-  //       hours: newHours,
-  //       minutes: prev.minutes,
-  //       seconds: prev.seconds,
-  //     };
-  //   });
-  // };
+  const handleReset = () => {
+    setIsRunning(false);
+    const resetTime = {
+      hours: initialHours,
+      minutes: initialMinutes,
+      seconds: initialSeconds,
+    };
+    setTimeLeft(resetTime);
+    updateUrlParams(resetTime.hours, resetTime.minutes, resetTime.seconds);
+  };
+
+  const currentCheckpoint = getCheckpoint();
 
   return (
-    <div className="w-full flex items-center justify-center flex-col gap-6">
-      <Card className="mx-auto p-6 bg-gradient-to-br from-blue-500 to-purple-600 max-w-3xl w-full felx items-center justify-center">
-        <div className="flex justify-center items-center gap-6 mb-6">
+    <div className="w-full max-w-4xl mx-auto flex flex-col items-center">
+      {/* Main Timer Display */}
+      <div
+        className="w-full mt-10 relative"
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}
+      >
+        <div className="flex justify-center items-center gap-4 mb-4">
           <TimeUnit value={timeLeft.hours} label="HOURS" />
-          <span className="text-4xl font-bold text-white">:</span>
+          <span className="text-3xl md:text-4xl font-bold text-white opacity-70">
+            :
+          </span>
           <TimeUnit value={timeLeft.minutes} label="MINUTES" />
-          <span className="text-4xl font-bold text-white">:</span>
+          <span className="text-3xl md:text-4xl font-bold text-white opacity-70">
+            :
+          </span>
           <TimeUnit value={timeLeft.seconds} label="SECONDS" />
         </div>
-        {/* <div className="flex justify-center gap-4">
-          <Button
-            variant="secondary"
-            size="lg"
-            onClick={() => setIsRunning(!isRunning)}
-          >
-            {isRunning ? (
-              <PauseIcon className="mr-2" />
-            ) : (
-              <PlayIcon className="mr-2" />
-            )}
-            {isRunning ? "Stop" : "Start"}
-          </Button>
-          <Button variant="outline" size="lg" onClick={handleReset}>
-            <RefreshCwIcon className="mr-2" />
-            Reset
-          </Button>
-        </div> */}
-      </Card>
 
-      <Card className="max-w-3xl w-full mx-auto p-4">
-        <h3 className="text-lg font-semibold mb-4">
-          {getCheckpoint()}
+        {/* Control Buttons */}
+        <div className="flex justify-center gap-3">
+          {/* Start button - always visible when timer is not running */}
+          {!isRunning && (
+            <button
+              onClick={handleToggle}
+              className="px-6 py-2 rounded-lg font-medium transition-all duration-200 bg-green-600 hover:bg-green-700 text-white"
+            >
+              ▶ Start
+            </button>
+          )}
+
+          {/* Pause button - only visible when running and hovered */}
+          {isRunning && (
+            <button
+              onClick={handleToggle}
+              className={`px-6 py-2 rounded-lg font-medium transition-all duration-300 bg-red-600 hover:bg-red-700 text-white ${
+                isHovered
+                  ? "opacity-100 translate-y-0"
+                  : "opacity-0 translate-y-2 pointer-events-none"
+              }`}
+            >
+              ⏸ Pause
+            </button>
+          )}
+
+          {/* Reset button - always visible when hovered */}
+          <button
+            onClick={handleReset}
+            className={`px-6 py-2 rounded-lg font-medium transition-all duration-300 bg-gray-600 hover:bg-gray-700 text-white ${
+              isHovered
+                ? "opacity-100 translate-y-0"
+                : "opacity-0 translate-y-2 pointer-events-none"
+            }`}
+          >
+            🔄 Reset
+          </button>
+        </div>
+      </div>
+
+      {/* Progress Section */}
+      <div className="p-4 w-full z-20">
+        <h3 className="text-3xl font-semibold mb-3 text-white text-center font-mono tracking-wide">
+          {currentCheckpoint.name}
         </h3>
-        <div className="w-full bg-gray-200 rounded-full h-4">
+
+        {/* Checkpoint Progress Bar - Fixed with white color */}
+        <div className="w-full bg-gray-800/60 rounded-full h-3 overflow-hidden border border-gray-600/50">
           <div
-            className="bg-blue-600 h-4 rounded-full transition-all duration-500"
+            className="bg-white h-full rounded-full transition-all duration-500 ease-out relative shadow-lg"
             style={{ width: `${getProgress()}%` }}
-          />
+          >
+            {/* Animated glow effect */}
+            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-red to-transparent animate-pulse"></div>
+          </div>
         </div>
-        <div className="mt-4 grid grid-cols-3 gap-4">
-          <TimelineItem
-            time="Ends at 03:00 PM"
-            label="Checkpoint 1"
-            active={getCheckpoint() === "Checkpoint 1 : Ends at 03:00 PM"}
-          />
-          <TimelineItem
-            time="Ends at 08:00 PM"
-            label="Checkpoint 2"
-            active={getCheckpoint() === "Checkpoint 2 : Ends at 08:00 PM"}
-          />
-          <TimelineItem
-            time="Ends at 01:00 AM"
-            label="Checkpoint 3"
-            active={getCheckpoint() === "Checkpoint 3 : Ends at 01:00 AM"}
-          />
-          <TimelineItem
-            time="Ends at 6:00 AM"
-            label="Checkpoint 4"
-            active={getCheckpoint() === "Checkpoint 4 : Ends at 6:00 AM"}
-          />
-          <TimelineItem
-            time="Ends at 11:00 AM"
-            label="Checkpoint 5"
-            active={getCheckpoint() === "Checkpoint 5 : Ends at 11:00 AM"}
-          />
-          <TimelineItem
-            time="Ends at 04:00 PM"
-            label="Checkpoint 6"
-            active={getCheckpoint() === "Final Checkpoint : Ends at 04:00 PM"}
-          />
+
+        <div className="mt-3 flex justify-between text-sm">
+          <span className="text-white/70">
+            Checkpoint {currentCheckpoint.stage}
+          </span>
+          <span className="text-white font-medium">
+            {Math.round(getProgress())}% Complete
+          </span>
+          <span className="text-white/70">
+            {currentCheckpoint.stage < 7
+              ? `Stage ${currentCheckpoint.stage}/6`
+              : "Finished"}
+          </span>
         </div>
-      </Card>
+      </div>
     </div>
   );
 };
 
 const TimeUnit = ({ value, label }: { value: number; label: string }) => (
   <div className="text-center">
-    <div className="bg-white bg-opacity-20 rounded-lg p-4 backdrop-blur-sm">
-      <span className="text-7xl font-bold text-white">
+    <div className="bg-white/10 backdrop-blur-sm rounded-xl p-3 md:p-4 border border-white/20 shadow-lg">
+      <span className="text-3xl md:text-5xl lg:text-7xl font-bold text-white font-mono">
         {value.toString().padStart(2, "0")}
       </span>
     </div>
-    <span className="text-lg font-semibold text-white mt-2 block">{label}</span>
-  </div>
-);
-
-const TimelineItem = ({
-  time,
-  label,
-  active,
-}: {
-  time: string;
-  label: string;
-  active: boolean;
-}) => (
-  <div
-    className={`col-span-1 flex items-center px-2 py-4 rounded-xl ${
-      active ? "bg-blue-100" : ""
-    }`}
-  >
-    <div
-      className={`w-3 h-3 rounded-full mr-3 ${
-        active ? "bg-blue-600" : "bg-gray-300"
-      }`}
-    />
-    <div>
-      <p className="text-xl font-medium">{label}</p>
-      <p className="text-md text-gray-500">{time}</p>
-    </div>
+    <span className="text-xs md:text-sm font-medium text-white/80 mt-2 block tracking-wider">
+      {label}
+    </span>
   </div>
 );
 
